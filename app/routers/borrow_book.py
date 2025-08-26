@@ -111,7 +111,7 @@ async def get_my_borrows(
 @router.get("/active", response_model=List[schemas.BorrowInfo])
 async def get_active_borrows(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(role_required(Role.Author))):
+    current_user: User = Depends(role_required(Role.Librarian))):
     
     result = await db.execute(
         select(BorrowRecord)

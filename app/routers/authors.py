@@ -18,7 +18,7 @@ router = APIRouter(
 @router.get("/authors", response_model=List[schemas.UserOut])
 async def get_authors(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(role_required(Role.Member)),
+    _: User = Depends(role_required(Role.Librarian)),
     limit: int = 10, skip: int = 0,
     search: Optional[str] = Query(None, description="Search by name or email")
     ):
@@ -41,7 +41,7 @@ async def get_authors(
 @router.get("/members", response_model=List[schemas.UserOut])
 async def get_members(
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(role_required(Role.Member)),
+    _: User = Depends(role_required(Role.Librarian)),
     limit: int = 10, skip: int = 0,
     search: Optional[str] = Query(None, description="Search by name or email")):
     

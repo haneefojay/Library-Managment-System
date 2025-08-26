@@ -53,7 +53,7 @@ async def update_book(id: int, book_update: schemas.BookUpdate, db: AsyncSession
     return book
 
 @router.delete("/{id}")
-async def delete_book(id: int, db: AsyncSession = Depends(get_db), _: bool = Depends(role_required(Role.Author))):
+async def delete_book(id: int, db: AsyncSession = Depends(get_db), _: bool = Depends(role_required(Role.Librarian))):
     
     query = await db.execute(select(Book).where(Book.id == id))
     result = query.scalars().first()
