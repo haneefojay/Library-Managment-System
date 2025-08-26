@@ -39,6 +39,8 @@ class User(Base):
     borrow_records: Mapped[List["BorrowRecord"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    notifications = relationship("Notification", back_populates="user", cascade="all, delete")
+
 
 class Book(Base):
     
@@ -78,3 +80,15 @@ class BorrowRecord(Base):
     #Relationships
     user: Mapped["User"] = relationship(back_populates="borrow_records")
     book: Mapped["Book"] = relationship(back_populates="borrow_records")
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    message: Mapped[str] = mapped_column(String, nullable=False)
+    type: Mapped[str] = mapped_column(String, default="reminder")  # reminder | overdue | system
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="notifications")

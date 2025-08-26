@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from .models import Base
 from .database import engine
-from .routers import auth, user, book, borrow_book
+from .routers import auth, user, book, borrow_book, authors
 
 app = FastAPI(title="Library Management API", version="0.1.0")
 
@@ -18,3 +18,4 @@ app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(book.router)
 app.include_router(borrow_book.router)
+app.include_router(authors.router)

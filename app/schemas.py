@@ -1,8 +1,8 @@
 from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime, date
-from .models import BookStatus
+from .models import BookStatus, Book
 
 from .models import Role
 
@@ -79,3 +79,9 @@ class BorrowInfo(BorrowBook):
     
     class Config:
         orm_mode = True
+
+
+class AuthorInfo(UserOut):
+    book: BookOut    
+    class Config:
+        orm_mode: True
