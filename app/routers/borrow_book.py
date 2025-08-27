@@ -35,7 +35,7 @@ async def borrow_book(
     borrowed = BorrowRecord(
         user_id = current_user.id,
         book_id = id,
-        due_at = datetime.utcnow() + timedelta(days=14)
+        due_at = datetime.now(timezone.utc) + timedelta(minutes=2)
     )
     db.add(borrowed)
     

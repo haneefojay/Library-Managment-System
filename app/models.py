@@ -17,7 +17,12 @@ class Role(enum.Enum):
 class BookStatus(enum.Enum):
     Available = "Available"
     Borrowed = "Borrowed"
+    Overdue = "overdue"
 
+class NotificationType:
+    Reminder = "Reminder"
+    Overdue = "Overdue"
+    System = "System"
 
 class User(Base):
     
@@ -39,7 +44,7 @@ class User(Base):
     borrow_records: Mapped[List["BorrowRecord"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
-    notifications = relationship("Notification", back_populates="user", cascade="all, delete")
+    notifications: Mapped[List["BorrowRecord"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
 
 
 class Book(Base):
@@ -77,6 +82,9 @@ class BorrowRecord(Base):
     due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     returned_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     
+    reminder_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    overdue_notified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    
     #Relationships
     user: Mapped["User"] = relationship(back_populates="borrow_records")
     book: Mapped["Book"] = relationship(back_populates="borrow_records")
@@ -85,10 +93,10 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
     message: Mapped[str] = mapped_column(String, nullable=False)
-    type: Mapped[str] = mapped_column(String, default="reminder")  # reminder | overdue | system
-    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    type: Mapped[str] = mapped_column(String, default=NotificationType.Reminder, nullable=False)  # reminder | overdue | system
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     user = relationship("User", back_populates="notifications")

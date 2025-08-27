@@ -85,3 +85,42 @@ class AuthorInfo(UserOut):
     book: BookOut    
     class Config:
         orm_mode: True
+
+
+class NotificationOut(BaseModel):
+    id: int
+    message: str
+    type: str
+    is_read: bool
+    created_at: datetime
+
+    class Config: 
+        orm_mode = True
+
+
+class BorrowerMini(BaseModel):
+    id: int
+    name: str
+    email: str
+
+    class Config:
+        orm_mode = True
+
+
+class BookMini(BaseModel):
+    id: int
+    title: str
+
+    class Config:
+        orm_mode = True
+
+
+class OverdueBorrowOut(BaseModel):
+    id: int
+    borrowed_at: datetime
+    due_at: datetime
+    user: BorrowerMini
+    book: BookMini
+
+    class Config:
+        orm_mode = True
