@@ -8,6 +8,7 @@ from sqlalchemy import or_, select, update
 
 from app.database import get_session
 from app.models import BorrowRecord, Book, BookStatus, Notification, User, NotificationType
+from ..services.notification import create_notification_and_push                                
 
 CHECK_INTERVAL = 60 * 60
 
