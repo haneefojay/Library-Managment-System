@@ -93,7 +93,7 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     message: Mapped[str] = mapped_column(String, nullable=False)
     type: Mapped[str] = mapped_column(String, default=NotificationType.Reminder, nullable=False)  # reminder | overdue | system
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

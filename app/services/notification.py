@@ -2,10 +2,11 @@ from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Notification
 from app.realtime.manager import ws_manager
+from typing import Optional
 
 async def create_notification_and_push(
     db: AsyncSession,
-    user_id: int | None,
+    user_id: Optional[int],
     message: str,
 ) -> Notification:
 
@@ -16,7 +17,7 @@ async def create_notification_and_push(
         created_at=datetime.now(timezone.utc),
     )
     db.add(notif)
-    await db.commit()
+    await db.flush()
     await db.refresh(notif)
 
     if user_id is not None:

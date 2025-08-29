@@ -71,7 +71,7 @@ class BorrowBook(BaseModel):
     book: BookOut
     
     class Config:
-        orm_maode = True
+        orm_mode = True
 
 
 class BorrowInfo(BorrowBook):
@@ -84,7 +84,7 @@ class BorrowInfo(BorrowBook):
 class AuthorInfo(UserOut):
     book: BookOut    
     class Config:
-        orm_mode: True
+        orm_mode = True
 
 
 class NotificationOut(BaseModel):
