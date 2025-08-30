@@ -2,7 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime, date
-from .models import BookStatus, Book
+from .models import BookStatus, Book, NotificationPreference
 
 from .models import Role
 
@@ -22,8 +22,15 @@ class UserOut(BaseModel):
     email: EmailStr
     role: Role
     created_at: datetime
+    notification_preference: NotificationPreference
     bio: Optional[str] = None
     birthdate: Optional[date] = None
+    
+    class Config:
+        from_attributes = True
+
+class UserPreferencesUpdate(BaseModel):
+    notification_preference: NotificationPreference
 
 class Token(BaseModel):
     access_token: str
@@ -71,20 +78,20 @@ class BorrowBook(BaseModel):
     book: BookOut
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class BorrowInfo(BorrowBook):
     user: UserBase
     
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AuthorInfo(UserOut):
     book: BookOut    
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class NotificationOut(BaseModel):
@@ -95,7 +102,11 @@ class NotificationOut(BaseModel):
     created_at: datetime
 
     class Config: 
-        orm_mode = True
+        from_attributes = True
+
+
+class UnreadCount(BaseModel):
+    unread: int
 
 
 class BorrowerMini(BaseModel):
@@ -104,7 +115,7 @@ class BorrowerMini(BaseModel):
     email: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class BookMini(BaseModel):
@@ -112,7 +123,7 @@ class BookMini(BaseModel):
     title: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class OverdueBorrowOut(BaseModel):
@@ -123,4 +134,4 @@ class OverdueBorrowOut(BaseModel):
     book: BookMini
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import or_
+from sqlalchemy import or_, func, update
 from typing import List, Optional
 from datetime import datetime, timezone
 
@@ -99,3 +99,34 @@ async def manual_scan(
     async with get_session() as db:
         await scan_due_and_overdue_once()
     return {"detail": "Manual scan completed"}
+
+@router.get("/unread-count", response_model=schemas.UnreadCount)
+async def get_unread_count(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+    
+    query = select(func.count(Notification.id)).where(
+        Notification.user_id == current_user.id,
+        Notification.is_read == False,
+    )
+    
+    unread_count = await db.scalar(query)
+    return {"unread": unread_count or 0}
+
+@router.patch("/read-all", status_code=status.HTTP_204_NO_CONTENT)
+async def mark_all_as_read(
+    before: Optional[datetime] = Query(None, description="Mark read up to this timesamp (ISO). If omitted, mark all."),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+    
+    clause = (Notification.user_id == current_user.id) & (Notification.is_read == False)
+    if before:
+        clause = clause & (Notification.created_at <= before)
+    
+    await db.execute(
+        update(Notification)
+        .where(clause)
+        .values(is_read=True)
+    )
+    await db.commit()
+    return None

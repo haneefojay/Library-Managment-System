@@ -5,8 +5,9 @@ from sqlalchemy import select
 
 from ..database import get_db
 from ..models import User, Role
-from ..schemas import UserRegister, UserOut
+from ..schemas import UserRegister, UserOut, UserPreferencesUpdate
 from ..utils import hash_password
+from ..dependencies import get_current_user
 
 router = APIRouter(
     tags=["Authentication"]
@@ -38,3 +39,15 @@ async def register_user(payload: UserRegister, db: AsyncSession = Depends(get_db
     await db.commit()
     await db.refresh(user)
     return user
+
+@router.patch("/me/preference", response_model=UserOut)
+async def update_my_preference(
+    preferences: UserPreferencesUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)):
+    
+    current_user.notification_preference = preferences.notification_preference
+    db.add(current_user)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user

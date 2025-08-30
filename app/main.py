@@ -16,9 +16,7 @@ async def root():
 async def on_startup():
     async with engine.begin() as conn:
         await conn.run_sync(lambda sync_conn: Base.metadata.create_all(bind=sync_conn))
-
-@app.on_event("startup")
-async def startup():
+    
     asyncio.create_task(scheduler_loop())
 
 app.include_router(auth.router)
