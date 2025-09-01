@@ -15,22 +15,29 @@ async def dispatch_notification_task(user_id: int, subject: str, message: str, w
         user = user_result.scalar_one_or_none()
         
         if not user:
+            print(f"[Notification Dispatch] User {user_id} not found.")
             return
         
         preference = user.notification_preference
+        print(f"[Notification Dispatch] User {user.name} preference is {preference.name}.")
         
         if preference in [NotificationPreference.WEBSOCKET, NotificationPreference.ALL]:
+            print(f"[Notification Dispatch] Sending WebSocket notification to user {user.name}.")
             await ws_manager.send_to_user(user_id, ws_payload)
         
         if preference in [NotificationPreference.EMAIL, NotificationPreference.ALL]:
-            await send_email_async(to=user.email, subject=subject, body=message)
+            print(f"[Notification Dispatch] Sending email notification to user {user.name}.")
+            success, error = await send_email_async(to=user.email, subject=subject, body=message)
+            
+            if not success:
+                print(f"[Notification Error] Could not send email to {user.email}: {error}")
 
 async def create_notification_in_db(
     db: AsyncSession,
     user_id: Optional[int],
     message: str,
     type: NotificationType,
-) -> Notification:
+    ) -> Notification:
     
     notif = Notification(
         user_id=user_id,

@@ -9,7 +9,7 @@ from app.database import get_session
 from app.models import Book, BookStatus, BorrowRecord, Notification, User, Role, NotificationType
 from app.services.notification import create_notification_in_db, dispatch_notification_task
 
-CHECK_INTERVAL = 60 * 60 * 24
+CHECK_INTERVAL = 60 * 60
 REMINDER_DAYS_BEFORE = 1
 
 
@@ -60,7 +60,8 @@ async def scan_due_and_overdue_once() -> None:
                     "data": {
                         "id": notif.id, "message": notif.message,
                         "is_read": notif.is_read, 
-                        "created_at": notif.created_at.isoformat()}
+                        "created_at": notif.created_at.isoformat()
+                        }
                     }
                 tasks_to_dispatch.append(dispatch_notification_task(user.id, "Book Overdue", message, ws_payload))
                 
@@ -73,7 +74,8 @@ async def scan_due_and_overdue_once() -> None:
                         "data": {
                             "id": lib_notify.id, "message": lib_notify.message,
                             "is_read": lib_notify.is_read, 
-                            "created_at": lib_notify.created_at.isoformat()}
+                            "created_at": lib_notify.created_at.isoformat()
+                            }
                         }
                     tasks_to_dispatch.append(dispatch_notification_task(librarian.id, "System Alert; Overdue Book", lib_message, lib_ws_payload))
                 
@@ -86,7 +88,14 @@ async def scan_due_and_overdue_once() -> None:
                 message = f"The book '{book.title}' is due on {borrow.due_at.date()}."
                 notif = await create_notification_in_db(db, user.id, message, NotificationType.Reminder)
                 
-                ws_payload = {"type": "notification", "data": {"id": notif.id, "message": notif.message, "is_read": notif.is_read, "created_at": notif.created_at.isoformat()}}
+                ws_payload = {
+                    "type": "notification", 
+                    "data": {
+                        "id": notif.id, "message": notif.message,
+                        "is_read": notif.is_read,
+                        "created_at": notif.created_at.isoformat()
+                        }
+                    }
                 tasks_to_dispatch.append(dispatch_notification_task(user.id, "Book Due Soon", message, ws_payload))
                 
                 borrow.reminder_sent_at = now

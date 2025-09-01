@@ -26,9 +26,9 @@ class NotificationType(str, enum.Enum):
 
 
 class NotificationPreference(str, enum.Enum):
-    WEBSOCKET = "websocket"
-    EMAIL = "email"
-    ALL = "all"
+    WEBSOCKET = "WEBSOCKET" 
+    EMAIL = "EMAIL"         
+    ALL = "ALL"  
 
 class User(Base):
     
@@ -38,11 +38,11 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(60), nullable=False)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password: Mapped[str] = mapped_column(String(80), nullable=False)
-    role: Mapped[Role] = mapped_column(SAEnum(Role), nullable=False)
+    role: Mapped[Role] = mapped_column(SAEnum(Role, create_constraint=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),nullable=False)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     birthdate: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
-    notification_preference: Mapped[NotificationPreference] = mapped_column(SAEnum(NotificationPreference), nullable=False, server_default=NotificationPreference.WEBSOCKET.value)
+    notification_preference: Mapped[NotificationPreference] = mapped_column(SAEnum(NotificationPreference, create_constraint=True), nullable=False, server_default=NotificationPreference.WEBSOCKET.value)
     
     books_uploaded: Mapped[List["Book"]] = relationship(
         back_populates="author", cascade="all, delete-orphan"
@@ -62,7 +62,7 @@ class Book(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     published_date: Mapped[Optional[date]] = mapped_column(Date, server_default=func.now(), nullable=False)
-    status: Mapped[BookStatus] = mapped_column(SAEnum(BookStatus), default=BookStatus.Available, nullable=False)
+    status: Mapped[BookStatus] = mapped_column(SAEnum(BookStatus, create_constraint=True), default=BookStatus.Available, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(),nullable=False)
     
     author_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), index=True, nullable=False)
@@ -101,7 +101,7 @@ class Notification(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=True)
     message: Mapped[str] = mapped_column(String, nullable=False)
-    type: Mapped[NotificationType] = mapped_column(SAEnum(NotificationType), default=NotificationType.Reminder, nullable=False)
+    type: Mapped[NotificationType] = mapped_column(SAEnum(NotificationType, create_constraint=True), default=NotificationType.Reminder, nullable=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
