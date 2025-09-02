@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, Query
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy.orm import selectinload
 from sqlalchemy import or_
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import Book, User, Role
+from app.models import User, Role
 from .. import schemas
-from ..dependencies import role_required, get_current_user
+from ..dependencies import role_required
 
 router = APIRouter(
     prefix="/users",
@@ -16,6 +16,7 @@ router = APIRouter(
 )
 
 @router.get("/authors", response_model=List[schemas.UserOut])
+@cache(expire=60, namespace="users")
 async def get_authors(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(role_required(Role.Librarian)),
@@ -39,6 +40,7 @@ async def get_authors(
 
 
 @router.get("/members", response_model=List[schemas.UserOut])
+@cache(expire=60, namespace="users")
 async def get_members(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(role_required(Role.Librarian)),

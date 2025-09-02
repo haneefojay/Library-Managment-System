@@ -6,9 +6,14 @@ from dotenv import load_dotenv
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+import redis.asyncio as aioredis
+
 load_dotenv()
 
 SQLALCHEMY_DATABASE_URL = f"postgresql+asyncpg://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
+REDIS_URL = f"{settings.redis_url}"
 
 engine = create_async_engine(SQLALCHEMY_DATABASE_URL, echo=False)
 
@@ -26,3 +31,7 @@ async def get_db():
 async def get_session() -> AsyncIterator[AsyncSession]:
     async with AsyncSessionLocal() as session:
         yield session
+
+async def init_cache():
+    redis = aioredis.from_url(REDIS_URL, encoding="utf8", decode_response=True)
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")

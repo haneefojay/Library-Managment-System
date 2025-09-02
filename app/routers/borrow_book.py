@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -9,7 +10,7 @@ from app.database import get_db
 from app.models import Book, User, Role, BorrowRecord, BookStatus
 from .. import schemas
 from ..dependencies import role_required, get_current_user
-from ..core.limiter import limiter, rate_limit_handler
+from ..core.limiter import limiter
 
 router = APIRouter(
     prefix="/borrow_book",
@@ -96,6 +97,7 @@ async def return_book(
 
 
 @router.get("/me", response_model=List[schemas.BorrowBook])
+@cache(expire=10)
 async def get_my_borrows(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(role_required(Role.Member))):
@@ -114,6 +116,7 @@ async def get_my_borrows(
     return result
 
 @router.get("/active", response_model=List[schemas.BorrowInfo])
+@cache(expire=10)
 async def get_active_borrows(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(role_required(Role.Librarian))):

@@ -1,8 +1,8 @@
 from __future__ import annotations
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
-from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional
 from datetime import datetime, date
-from .models import BookStatus, Book, NotificationPreference
+from .models import BookStatus, NotificationPreference
 
 from .models import Role
 

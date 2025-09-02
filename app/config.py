@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     smtp_pass: str
     smtp_from: str
     
+    redis_url: str
+    
     class Config:
         env_file = ".env"
 

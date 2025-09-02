@@ -1,5 +1,6 @@
 from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi_cache import FastAPICache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -8,7 +9,7 @@ from ..models import User, Role
 from ..schemas import UserRegister, UserOut, UserPreferencesUpdate
 from ..utils import hash_password
 from ..dependencies import get_current_user
-from ..core.limiter import limiter, rate_limit_handler
+from ..core.limiter import limiter
 
 router = APIRouter(
     tags=["Authentication"]
@@ -16,18 +17,20 @@ router = APIRouter(
 
 @router.post("/register", response_model=UserOut, status_code=201)
 @limiter.limit("5/hour")
-async def register_user(request: Request, payload: UserRegister, db: AsyncSession = Depends(get_db)):
-    # Only allow Author or Member to self-register
+async def register_user(
+    request: Request, payload: UserRegister, 
+    db: AsyncSession = Depends(get_db)
+    ):
+    
     if payload.role not in (Role.Author, Role.Member):
         raise HTTPException(status_code=403, detail="Only Authors or Members can self-register")
-
-
-    # Check if email exists
+    
+    
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
-
-
+    
+    
     user = User(
         name=payload.name,
         email=payload.email,
@@ -40,6 +43,9 @@ async def register_user(request: Request, payload: UserRegister, db: AsyncSessio
     db.add(user)
     await db.commit()
     await db.refresh(user)
+    
+    await FastAPICache.clear(namespace="users")
+    
     return user
 
 @router.patch("/me/preference", response_model=UserOut)

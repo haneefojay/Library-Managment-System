@@ -1,8 +1,9 @@
 from .database import Base
 from sqlalchemy import Column, Integer, String, Boolean, null, text, ForeignKey, Enum as SAEnum, Date, DateTime, func, Text
 from sqlalchemy.sql.sqltypes import TIMESTAMP
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, aliased
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import select
 import enum
 from .database import Base
 from datetime import datetime, date
@@ -74,7 +75,6 @@ class Book(Base):
     @hybrid_property
     def author_name(self):
         return self.author.name if self.author else None
-    
 
 class BorrowRecord(Base):
     

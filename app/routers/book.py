@@ -1,15 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Query
+from fastapi_cache.decorator import cache
+from fastapi_cache import FastAPICache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from typing import List, Optional
 
 from app.database import get_db
 from app.models import Book, User, Role
 from .. import schemas
 from ..dependencies import role_required, get_current_user
-from ..core.limiter import limiter, rate_limit_handler
+from ..core.limiter import limiter
 
 
 router = APIRouter(
@@ -19,37 +21,48 @@ router = APIRouter(
 
 
 @router.post("/", response_model=schemas.BookOut)
-async def upload_book(book: schemas.BookUpload, db: AsyncSession = Depends(get_db),
-                    current_user: User = Depends(role_required(Role.Author))):    
+async def upload_book(
+    book: schemas.BookUpload, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(role_required(Role.Author))
+    ):    
     
-    new_book = Book(**book.dict(), author_id=current_user.id)
+    new_book = Book(**book.model_dump(), author_id=current_user.id)
     db.add(new_book)
     await db.commit()
     await db.refresh(new_book)
+    
+    await FastAPICache.clear(namespace="books")
+    
     return new_book
 
 @router.get("/", response_model=List[schemas.BookOut])
 @limiter.limit("20/minute")
+@cache(expire=30, namespace="books")
 async def get_all_books(
     request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
     search: Optional[str] = Query(None, description="Search by title or name of author"),
-    limit: int = 10,
-    skip: int = 0
+    limit: int = Query(10, ge=1, le=100),
+    skip: int = Query(0, ge=0)
     ):
     
     query = select(Book).options(selectinload(Book.author))
-    
+
     if search:
+        search_term = f"%{search}%"
         query = query.where(
             or_(
-                Book.title.ilike(f"%{search}%"),
-                Book.author_name.ilike(f"%{search}%")
+                Book.title.ilike(search_term),
+                Book.author.has(User.name.ilike(search_term))
             )
         )
     
-    result = await db.execute(query.offset(skip).limit(limit))
+    #total = await db.scalar(select(func.count()).select_from(query.subquery()))
+    
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     books = result.scalars().unique().all()
     
     return books
@@ -69,6 +82,9 @@ async def update_book(id: int, book_update: schemas.BookUpdate, db: AsyncSession
         
     await db.commit()
     await db.refresh(book)
+    
+    await FastAPICache.clear(namespace="books")
+    
     return book
 
 @router.delete("/{id}")
@@ -82,5 +98,7 @@ async def delete_book(id: int, db: AsyncSession = Depends(get_db), _: bool = Dep
     
     await db.delete(result)
     await db.commit()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
     
+    await FastAPICache.clear(namespace="books")
+    
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

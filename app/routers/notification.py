@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
+from fastapi_cache.decorator import cache
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -11,7 +12,7 @@ from app.models import Book, User, Role, BorrowRecord, Notification
 from .. import schemas
 from ..dependencies import role_required, get_current_user
 from ..services.scheduler import scan_due_and_overdue_once
-from ..core.limiter import limiter, rate_limit_handler
+from ..core.limiter import limiter
 
 
 router = APIRouter(
@@ -60,6 +61,7 @@ async def mark_notification_as_read(
     return None
 
 @router.get("/overdue", response_model=List[schemas.OverdueBorrowOut])
+@cache(expire=10)
 async def list_overdue(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(role_required(Role.Librarian)),
@@ -104,9 +106,7 @@ async def manual_scan(
     return {"detail": "Manual scan completed"}
 
 @router.get("/unread-count", response_model=schemas.UnreadCount)
-@limiter.limit("3/minute")
 async def get_unread_count(
-    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)):
     
