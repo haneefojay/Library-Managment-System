@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -8,13 +8,15 @@ from ..models import User, Role
 from ..schemas import UserRegister, UserOut, UserPreferencesUpdate
 from ..utils import hash_password
 from ..dependencies import get_current_user
+from ..core.limiter import limiter, rate_limit_handler
 
 router = APIRouter(
     tags=["Authentication"]
 )
 
 @router.post("/register", response_model=UserOut, status_code=201)
-async def register_user(payload: UserRegister, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/hour")
+async def register_user(request: Request, payload: UserRegister, db: AsyncSession = Depends(get_db)):
     # Only allow Author or Member to self-register
     if payload.role not in (Role.Author, Role.Member):
         raise HTTPException(status_code=403, detail="Only Authors or Members can self-register")

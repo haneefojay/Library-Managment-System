@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import Book, User, Role, BorrowRecord, BookStatus
 from .. import schemas
 from ..dependencies import role_required, get_current_user
+from ..core.limiter import limiter, rate_limit_handler
 
 router = APIRouter(
     prefix="/borrow_book",
@@ -16,7 +17,9 @@ router = APIRouter(
 )
 
 @router.post("/{id}", response_model=schemas.BorrowBook)
+@limiter.limit("5/minute")
 async def borrow_book(
+    request: Request,
     id: int, db: AsyncSession = Depends(get_db),
     current_user: User = Depends(role_required(Role.Member))):
     
@@ -56,7 +59,9 @@ async def borrow_book(
 
 
 @router.patch("/{id}/return")
+@limiter.limit("5/minute")
 async def return_book(
+    request: Request,
     id: int, 
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(role_required(Role.Member))):

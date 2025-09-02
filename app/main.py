@@ -4,9 +4,15 @@ from .models import Base
 from .database import engine
 from .routers import auth, user, book, borrow_book, authors, notification, ws_notification
 from .services.scheduler import scheduler_loop
+from .core.limiter import limiter, rate_limit_handler
 
 
 app = FastAPI(title="Library Management API", version="0.1.0")
+
+
+app.state.limiter = limiter
+app.add_exception_handler(429, rate_limit_handler)
+
 
 @app.get("/")
 async def root():

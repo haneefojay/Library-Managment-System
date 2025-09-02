@@ -1,7 +1,7 @@
-from __future__ import annotations
+#from __future__ import annotations
 
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,6 +13,7 @@ from app.schemas import UserOut,Token
 from app.utils import verify_password
 from app.oauth2 import create_access_token
 from app.dependencies import get_current_user
+from app.core.limiter import limiter
 
 
 router = APIRouter(
@@ -21,11 +22,13 @@ router = APIRouter(
 
 
 @router.post("/login", response_model=Token)
+@limiter.limit("3/minute")
 async def login(
+    request: Request,
     form: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
-):
-    # OAuth2PasswordRequestForm has username & password fields; we use email as username
+    ):
+    
     result = await db.execute(select(User).where(User.email == form.username))
     user = result.scalar_one_or_none()
     if not user or not verify_password(form.password, user.password):

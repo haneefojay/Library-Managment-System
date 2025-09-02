@@ -1,13 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from typing import List
+from sqlalchemy import or_
+from typing import List, Optional
 
 from app.database import get_db
 from app.models import Book, User, Role
 from .. import schemas
 from ..dependencies import role_required, get_current_user
+from ..core.limiter import limiter, rate_limit_handler
 
 
 router = APIRouter(
@@ -27,10 +29,27 @@ async def upload_book(book: schemas.BookUpload, db: AsyncSession = Depends(get_d
     return new_book
 
 @router.get("/", response_model=List[schemas.BookOut])
-async def get_all_books(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+@limiter.limit("20/minute")
+async def get_all_books(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    search: Optional[str] = Query(None, description="Search by title or name of author"),
+    limit: int = 10,
+    skip: int = 0
+    ):
     
     query = select(Book).options(selectinload(Book.author))
-    result = await db.execute(query)
+    
+    if search:
+        query = query.where(
+            or_(
+                Book.title.ilike(f"%{search}%"),
+                Book.author_name.ilike(f"%{search}%")
+            )
+        )
+    
+    result = await db.execute(query.offset(skip).limit(limit))
     books = result.scalars().unique().all()
     
     return books

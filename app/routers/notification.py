@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
@@ -11,6 +11,7 @@ from app.models import Book, User, Role, BorrowRecord, Notification
 from .. import schemas
 from ..dependencies import role_required, get_current_user
 from ..services.scheduler import scan_due_and_overdue_once
+from ..core.limiter import limiter, rate_limit_handler
 
 
 router = APIRouter(
@@ -94,14 +95,18 @@ async def list_overdue(
     return res.scalars().all()
 
 @router.post("/scan", status_code=status.HTTP_200_OK)
+@limiter.limit("2/minute")
 async def manual_scan(
+    request: Request,
     _: User = Depends(role_required(Role.Librarian))):
     async with get_session() as db:
         await scan_due_and_overdue_once()
     return {"detail": "Manual scan completed"}
 
 @router.get("/unread-count", response_model=schemas.UnreadCount)
+@limiter.limit("3/minute")
 async def get_unread_count(
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)):
     
